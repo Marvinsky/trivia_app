@@ -16,7 +16,10 @@ from models import setup_db, Question, Category
 QUESTIONS_PER_PAGE = 10
 
 def paginate_questions(request, selection):
-  page = request.args.get('page', 1, type=int)
+  if request:
+    page = request.args.get('page', 1, type=int)
+  else:
+    page = 1
   start = (page-1)*QUESTIONS_PER_PAGE
   end = start + QUESTIONS_PER_PAGE
   questions = [question.format() for question in selection]
@@ -48,7 +51,7 @@ def create_app(test_config=None):
   '''
   @app.route('/categories', methods=['GET'])
   def get_categories():
-    categories = [c.format() for c in Category.query.order_by(Category.id).all()]
+    categories = {c.id:c.type for c in Category.query.order_by(Category.id).all()}
     
     if len(categories) == 0:
         abort(404)
@@ -75,7 +78,8 @@ def create_app(test_config=None):
   def retrieve_questions():
     questions = Question.query.order_by(Question.id).all()
     current_questions = paginate_questions(request, questions) 
-    categories = [c.format() for c in Category.query.order_by(Category.id).all()]
+    categories = Category.query.order_by(Category.id).all()
+    cat_dict = {c.id:c.type for c in categories}
 
     if len(current_questions) == 0:
       abort(404)
@@ -84,7 +88,7 @@ def create_app(test_config=None):
       'success': True,
       'questions': current_questions,
       'total_questions': len(questions),
-      'categories': categories,
+      'categories': cat_dict,
       'current_category': None 
     })
 
@@ -105,14 +109,15 @@ def create_app(test_config=None):
         question.delete()
         selection = Question.query.order_by(Question.id).all()
         current_questions =  paginate_questions(request, selection)
-        categories = [c.format() for c in Category.query.order_by(Category.id).all()]
+        categories = Category.query.order_by(Category.id).all()
+        cat_dict = {c.id:c.type for c in categories}
         
         return jsonify({
           'success': True,
           'deleted': question_id,
           'questions': current_questions,
           'total_questions': len(selection),
-          'categories': categories,
+          'categories': cat_dict,
           'current_category': None
         })   
     except:
@@ -209,24 +214,17 @@ def create_app(test_config=None):
   '''
   @app.route('/quizzes', methods=['POST'])
   def get_quizzes():
+    body = request.get_json()
+    previous_questions = body.get('previous_questions', [])
+    quiz_category = body.get('quiz_category', None)
+    category_id = int(quiz_category['id'])
     try:
-      body = request.get_json()
-      previous_questions = body.get('previous_questions', [])
-      quiz_category2 = body.get('quiz_category', None)
-
-      print("previous_questions: ", previous_questions)
-      print("quiz_category2: ", quiz_category2)
-      quiz_category = json.loads(quiz_category2) if quiz_category2 is not None else None
-      print("quiz_category: ", quiz_category)
-
-      print("quizz_category['id'] = ", quizz_category['id'])
-      if quizz_category['id'] == 0:
-        print("1")
+      if category_id == 0:
         questions = Question.query.filter(Question.id.notin_(previous_questions)).all()
         print("== 0 : ", len(questions))
       else:
         print("2")
-        questions = Question.query.filter(Question.category==quizz_category['id']).filter(Question.id.notin_(previous_questions)).all()
+        questions = Question.query.filter(Question.category==quiz_category['id']).filter(Question.id.notin_(previous_questions)).all()
         print("!= 0 : ", len(questions))
       available_questions = len(questions)
       print("available_questions: ", available_questions)
