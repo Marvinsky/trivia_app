@@ -82,11 +82,11 @@ Errors are returned as JSON objects in the following format:
 
 The API will return three error types when requests fail:
 
-* 400: API resource is incorrect
-* 404: API resource not found
-* 405: API method not allowed
-* 422: API request not processable
-* 500: triviaApp server error
+* 400: bad request
+* 404: resource not found
+* 405: method not allowed
+* 422: unprocessable
+* 500: internal server error
 
 ### Endpoints
 
