@@ -221,18 +221,15 @@ def create_app(test_config=None):
     try:
       if category_id == 0:
         questions = Question.query.filter(Question.id.notin_(previous_questions)).all()
-        print("== 0 : ", len(questions))
       else:
-        print("2")
         questions = Question.query.filter(Question.category==quiz_category['id']).filter(Question.id.notin_(previous_questions)).all()
-        print("!= 0 : ", len(questions))
       available_questions = len(questions)
-      print("available_questions: ", available_questions)
 
       if available_questions > 0:
         return jsonify({
           'success': True,
-          'question': Question.format(questions[random.randrange(0, available_questions)])
+          'question': Question.format(questions[random.randrange(0, available_questions)]),
+          'category_id': category_id
         })
       else:
         return jsonify({

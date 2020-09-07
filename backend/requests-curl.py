@@ -1,3 +1,9 @@
+GET /categories
+curl http://127.0.0.1:5000/categories
+
+GET /questions
+curl http://127.0.0.1:5000/questions
+
 curl -X DELETE http://localhost:5000/questions/26
 
 curl -X POST -H "Content-Type: application/json" -d '{"question": "First president of Peru?","answer": "San Martin","difficulty": 3,"category": 4}' http://localhost:5000/questions
