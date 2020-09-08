@@ -25,6 +25,13 @@ class TriviaTestCase(unittest.TestCase):
             'category': 4
         }
 
+        self.wrong_new_question = {
+            'question': 1,
+            'answer': 'San Martin',
+            'difficulty': 'hi',
+            'category': 4
+        }
+
 
         # binds the app to the current context
         with self.app.app_context():
@@ -69,7 +76,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['total_categories'])
 
     def test_delete_question(self):
-        id_to_delete = 27
+        id_to_delete = 32
         res = self.client().delete('/questions/'+str(id_to_delete))
         data = json.loads(res.data)
         question = Question.query.filter(Question.id == id_to_delete).one_or_none()
@@ -82,6 +89,17 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['deleted'], id_to_delete)
         self.assertEqual(question, None)
     
+    def test_delete_question_fails(self):
+        id_to_delete = 1000
+        res = self.client().delete('/questions'+str(id_to_delete))
+        data = json.loads(res.data)
+
+        question = Question.query.filter(Question.id == id_to_delete).one_or_none()
+        self.assertEqual(question, None)
+
+        self.assertEqual(data['success'], False)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['message'], 'resource not found')
 
     def test_create_question(self):
         res = self.client().post('/questions', json=self.new_question)
@@ -93,6 +111,15 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data['questions']))
 
 
+    def test_create_question_fails(self):
+        res = self.client().post('/questions', json=self.wrong_new_question)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'unprocessable')
+
+
     def test_search_questions(self):
         res = self.client().post('/questions', json={'searchTerm': 'title'})
         data = json.loads(res.data)
@@ -101,6 +128,14 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertTrue(data['total_questions'])
         self.assertEqual(data['current_category'], None)
+
+    def test_search_questions_fails(self):
+        res = self.client().patch('/questions', json={'searchTerm': ''})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 405)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'method not allowed')
 
     def test_get_questions_by_category(self):
         category_id = 4
@@ -112,6 +147,26 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['questions'])
         self.assertTrue(data['total_questions'])
         self.assertNotEqual(data['current_category'], None)
+
+    def test_get_questions_by_category_fails(self):
+        category_id = 100
+        res = self.client().get('/categories/'+str(category_id)+'/questions')
+        data = json.loads(res.data)
+
+        category = Category.query.filter_by(id=category_id).one_or_none()
+        self.assertEqual(category, None)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'unprocessable')
+
+
+    def test_get_question_of_category_fail(self):
+        res = self.client().get('/categories/1/questionABCE')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404) 
+
 
     def test_get_quizz_success(self):
         res = self.client().post('/quizzes', json={'previous_questions': [], 'quiz_category': {'id': 1, 'type':'Science'}})
@@ -128,8 +183,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 422)
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], 'unprocessable')
-
-
 
 
 # Make the tests conveniently executable
