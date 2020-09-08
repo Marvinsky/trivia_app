@@ -2,4 +2,6 @@
 .idea*
 .vscode
 /project3
+.DStore
+backend/.DS_Store
 
